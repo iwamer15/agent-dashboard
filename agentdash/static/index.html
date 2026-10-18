@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='6' height='6' rx='1.5' fill='%233b82f6'/%3E%3Crect x='9' y='1' width='6' height='6' rx='1.5' fill='%23eab308'/%3E%3Crect x='1' y='9' width='6' height='6' rx='1.5' fill='%2322c55e'/%3E%3Crect x='9' y='9' width='6' height='6' rx='1.5' fill='%23ef4444'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Agent Dashboard</div>
+  <div class="counts" id="counts"></div>
+  <div class="spacer"></div>
+  <span class="conn" id="conn" title="サーバーとの接続">●</span>
+  <button class="btn ghost" id="notifyBtn" title="入力待ちになったらブラウザで通知">🔔 通知を有効化</button>
+  <div class="seg" role="tablist">
+    <button class="seg-btn active" data-view="detail">詳細</button>
+    <button class="seg-btn" data-view="grid">並列表示</button>
+  </div>
+  <button class="btn primary" id="newBtn">＋ 新規セッション</button>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="filter">
+      <input id="search" type="search" placeholder="名前・リポジトリで絞り込み">
+      <label class="chk"><input type="checkbox" id="hideDone"> 完了・停止を隠す</label>
+    </div>
+    <div id="list" class="list"></div>
+  </aside>
+
+  <main id="main" class="main">
+    <section id="detailView" class="view">
+      <div id="empty" class="empty">
+        <h2>セッションがありません</h2>
+        <p>「＋ 新規セッション」から、対象リポジトリと最初の指示を入力して開始します。</p>
+        <p class="hint">各セッションは git worktree で分離され、並列で動かしても互いのファイルを壊しません。</p>
+      </div>
+      <div id="detail" class="detail hidden">
+        <div class="d-head">
+          <div class="d-title">
+            <span class="badge" id="dStatus"></span>
+            <h2 id="dName"></h2>
+          </div>
+          <div class="d-actions">
+            <button class="btn" id="stopBtn">■ 停止</button>
+            <button class="btn" id="doneBtn">✓ 完了にする</button>
+            <button class="btn danger ghost" id="delBtn">削除</button>
+          </div>
+        </div>
+        <div class="d-meta" id="dMeta"></div>
+        <div class="tabs">
+          <button class="tab active" data-tab="log">ログ</button>
+          <button class="tab" data-tab="diff">変更ファイル <span id="diffCount" class="count"></span></button>
+          <label class="chk small right"><input type="checkbox" id="showTools" checked> ツール結果を表示</label>
+        </div>
+        <div id="logPane" class="log"></div>
+        <div id="diffPane" class="diffpane hidden"></div>
+        <form id="composer" class="composer">
+          <textarea id="prompt" rows="2" placeholder="追加の指示（⌘/Ctrl + Enter で送信）"></textarea>
+          <button class="btn primary" id="sendBtn" type="submit">送信</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="gridView" class="view hidden">
+      <div id="grid" class="grid"></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="newDlg" class="dlg">
+  <form id="newForm" method="dialog">
+    <h2>新規セッション</h2>
+    <label>名前 <input name="name" placeholder="省略時は指示の先頭から"></label>
+    <label>対象リポジトリ（フォルダの絶対パス）
+      <input name="repo_path" list="repoList" required placeholder="/Users/you/project">
+      <datalist id="repoList"></datalist>
+    </label>
+    <label>最初の指示
+      <textarea name="prompt" rows="5" required placeholder="例: README を読んで、テストが無い関数にユニットテストを追加して"></textarea>
+    </label>
+    <div class="row2">
+      <label>エージェント <select name="adapter" id="adapterSel"></select></label>
+      <label>権限モード
+        <select name="permission_mode">
+          <option value="edit">編集は自動許可（コマンドは許可したものだけ）</option>
+          <option value="readonly">読むだけ（調査・計画の報告）</option>
+          <option value="allowlist">許可したものだけ</option>
+          <option value="full">すべて許可（注意）</option>
+        </select>
+      </label>
+    </div>
+    <label id="modelRow">モデル（空欄なら設定ファイルの既定）
+      <input name="model" list="modelList" placeholder="例: qwen2.5-coder:7b">
+      <datalist id="modelList"></datalist>
+      <span class="hint" id="adapterInfo"></span>
+    </label>
+    <label>許可（カンマ区切り。<code>write</code>=ファイル編集 / <code>run:pytest</code>=そのコマンドだけ実行 / <code>run</code>=全コマンド。読むのは常に可）
+      <textarea name="allowed_tools" rows="2"></textarea>
+    </label>
+    <div class="presets" id="toolPresets"></div>
+    <label class="chk"><input type="checkbox" name="use_worktree" checked> git worktree を作って作業を分離する（推奨）</label>
+    <p class="err" id="newErr"></p>
+    <div class="dlg-actions">
+      <button class="btn" value="cancel" formnovalidate>キャンセル</button>
+      <button class="btn primary" id="createBtn" value="ok">作成して実行</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

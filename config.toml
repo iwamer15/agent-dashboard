@@ -1,0 +1,28 @@
+# Agent Dashboard 設定
+# 読み込み順: --config 指定 → 環境変数 AGENTDASH_CONFIG → ~/.agentdash/config.toml → このファイル
+# Python 3.9/3.10 は TOML を読めないため、同じ内容の config.json を読む（このファイルを変えたら合わせて更新）
+
+data_dir = "~/.agentdash"            # DB・worktree・会話履歴の保存先
+default_adapter = "local_llm"        # 新規作成画面の初期選択 (local_llm / mock)
+
+[server]
+port = 8790                          # 使用中なら次のポートを自動選択
+
+[defaults]                           # 新規作成画面の初期値
+permission_mode = "edit"             # edit（編集は自動許可）/ readonly / allowlist / full
+allowed_tools = ["run:git status", "run:git diff"]   # write / run / run:<コマンドの先頭>
+use_worktree = true
+
+[adapters.local_llm]                 # 内蔵エージェント + OpenAI 互換 API の LLM サーバー
+base_url = "http://127.0.0.1:11434/v1"   # Ollama。LM Studio は :1234/v1、llama.cpp は :8080/v1
+model = "qwen2.5-coder:7b"
+api_key_env = ""                     # キーが必要なサーバーだけ「環境変数名」を書く（キー自体は書かない）
+tool_mode = "auto"                   # auto / native（function calling）/ text（本文にツールを書かせる）
+max_steps = 30                       # 1ターンでツールを使う最大回数
+timeout = 600                        # LLM の1回の応答を待つ秒数（CPU 実行は遅いので長め）
+cmd_timeout = 120                    # run_command の1回の上限秒数
+temperature = 0.2
+use_proxy = false                    # true で環境変数のプロキシを使う（既定は使わない）
+
+[adapters.mock]                      # デモ用の偽エージェント（LLM なしで画面を確認）
+delay = 0.4

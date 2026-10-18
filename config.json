@@ -1,0 +1,31 @@
+{
+  "data_dir": "~/.agentdash",
+  "default_adapter": "local_llm",
+  "server": {
+    "port": 8790
+  },
+  "defaults": {
+    "permission_mode": "edit",
+    "allowed_tools": [
+      "run:git status",
+      "run:git diff"
+    ],
+    "use_worktree": true
+  },
+  "adapters": {
+    "local_llm": {
+      "base_url": "http://127.0.0.1:11434/v1",
+      "model": "qwen2.5-coder:7b",
+      "api_key_env": "",
+      "tool_mode": "auto",
+      "max_steps": 30,
+      "timeout": 600,
+      "cmd_timeout": 120,
+      "temperature": 0.2,
+      "use_proxy": false
+    },
+    "mock": {
+      "delay": 0.4
+    }
+  }
+}
